@@ -13,6 +13,8 @@ import { getSession, login } from './api'
 import type { SessionResponse } from './api'
 import Dashboard from './Dashboard'
 import Register from './Register'
+import WantedList from './WantedList'
+import WantedDetail from './WantedDetail'
 
 export default function App() {
   return (
@@ -58,8 +60,7 @@ function AppContent() {
     state !== null &&
     'from' in state &&
     typeof state.from === 'string' &&
-    state.from.startsWith('/dashboard') &&
-    state.from.split(/[?#]/)[0] === '/dashboard'
+    /^\/(?:dashboard|wanted(?:\/[^/?#]+)?)(?:[?#].*)?$/.test(state.from)
   ) {
     returnTo = state.from
   }
@@ -186,7 +187,7 @@ function AppContent() {
               ) : (
                 <Register onRegistered={setSession} />
               )
-            } 
+            }
           />
 
           <Route
@@ -253,6 +254,7 @@ function AppContent() {
                       {loading ? 'Ingresando…' : 'Iniciar sesión'}
                     </button>
                   </form>
+
                   <p className="mt-5 text-sm text-slate-400">
                     ¿Primera vez aquí?{' '}
                     <Link
@@ -275,6 +277,12 @@ function AppContent() {
               path="/dashboard"
               element={<Dashboard onLogout={handleLogout} />}
             />
+            <Route
+              path="/wanted"
+              element={<WantedList onLogout={handleLogout} />}
+            >
+              <Route path=":id" element={<WantedDetail onLogout={handleLogout} />} />
+            </Route>
           </Route>
 
           <Route

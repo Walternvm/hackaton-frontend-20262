@@ -150,3 +150,92 @@ export async function getDashboardData(
 
   return { summary, logPose }
 }
+
+export interface Wanted {
+  id: string
+  name: string
+  epithet: string
+  bounty: number
+  status: string
+  crew: {
+    id: string
+    name: string
+  }
+  role: string
+  devilFruit: {
+    name: string
+    type: string
+  } | null
+  threatLevel: number
+  lastSeenIsland: string
+  updatedAt: string
+}
+
+export interface WantedPage {
+  content: Wanted[]
+  totalElements: number
+  totalPages: number
+  page: number
+  size: number
+}
+
+export async function getWantedPage(
+  query: string,
+  signal: AbortSignal,
+): Promise<WantedPage | null> {
+  const token = localStorage.getItem('logpose_token')
+
+  if (!token) return null
+
+  const response = await fetch(`${API_URL}/wanted?${query}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    signal,
+  })
+
+  if (response.status === 401) return null
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los carteles.')
+  }
+
+  const result: WantedPage = await response.json()
+  return result
+}
+
+export interface Crew {
+  id: string
+  name: string
+}
+
+export interface WantedDetailData extends Wanted {
+  age: number
+  heightCm: number
+  bio: string
+  lastSeen: { island: string; seenAt: string }
+  bountyHistory: { amount: number; issuedAt: string }[]
+}
+
+async function authorizedGet<T>(path: string, signal: AbortSignal): Promise<T | null> {
+  const token = localStorage.getItem('logpose_token')
+  if (!token) return null
+  const response = await fetch(API_URL + path, {
+    headers: { Authorization: 'Bearer ' + token },
+    signal,
+  })
+  if (response.status === 401) return null
+  if (response.status === 404) throw new Error('No se encontró el cartel solicitado.')
+  if (!response.ok) throw new Error('No se pudo cargar la información (' + response.status + ').')
+  const result: T = await response.json()
+  return result
+}
+
+export function getCrews(signal: AbortSignal) {
+  return authorizedGet<Crew[]>('/crews', signal)
+}
+
+export function getWantedDetail(id: string, signal: AbortSignal) {
+  return authorizedGet<WantedDetailData>('/wanted/' + encodeURIComponent(id), signal)
+}
+
